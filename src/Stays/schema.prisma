@@ -1,0 +1,77 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model HotelMapping {
+  id        String        @id @default(uuid())
+  hotelId   String
+  source    String
+  sourceId  String
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  rooms     RoomMapping[]
+
+  @@unique([source, sourceId])
+}
+
+model Room {
+  id                String                  @id @default(uuid())
+  hotelId           String
+  name              String
+  description       String?
+  maxOccupancy      Int?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  mappings          RoomMapping[]
+  contentEnrichment RoomContentEnrichment[]
+}
+
+model RoomMapping {
+  id             String   @id @default(uuid())
+  roomId         String
+  hotelMappingId String
+  source         String
+  sourceId       String
+  sourceData     Json
+  confidence     Float
+  mappingType    String
+  isPrimary      Boolean
+  qualityScore   Int?
+  lastSyncedAt   DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  room         Room         @relation(fields: [roomId], references: [id])
+  hotelMapping HotelMapping @relation(fields: [hotelMappingId], references: [id])
+
+  @@unique([source, sourceId, hotelMappingId])
+}
+
+model RoomContentEnrichment {
+  id         String   @id @default(uuid())
+  roomId     String
+  source     String
+  fieldName  String
+  content    Json
+  quality    String
+  enrichedAt DateTime @default(now())
+
+  room Room @relation(fields: [roomId], references: [id])
+}
+
+model MappingConflict {
+  id                 String    @id @default(uuid())
+  entityType         String
+  entityId           String
+  fieldName          String
+  status             String
+  resolution         String?
+  conflictingSources Json
+  detectedAt         DateTime  @default(now())
+  resolvedAt         DateTime?
+}

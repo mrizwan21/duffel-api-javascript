@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:14-alpine
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: hotel_mapping
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d hotel_mapping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    command: node dist/scripts/api_server.js
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://user:password@postgres:5432/hotel_mapping
+      ENTERPRISE_API_KEY: my-super-secret-key
+      PORT: 3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  cron-worker:
+    build: .
+    command: node dist/scripts/cron_recalculate_scores.js
+    environment:
+      DATABASE_URL: postgresql://user:password@postgres:5432/hotel_mapping
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

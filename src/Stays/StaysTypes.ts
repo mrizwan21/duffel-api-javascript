@@ -1,6 +1,16 @@
 import { PaginationMeta } from './../types'
 
-export type StaysBedType = 'single' | 'double' | 'queen' | 'king' | 'sofabed'
+export type StaysBedType =
+  | 'single'
+  | 'twin'
+  | 'double'
+  | 'full'
+  | 'queen'
+  | 'king'
+  | 'california_king'
+  | 'sofabed'
+  | 'murphy'
+  | 'bunk'
 
 export interface StaysBed {
   /**
@@ -241,11 +251,36 @@ export interface StaysPhoto {
   url: string
 }
 
+export interface StaysRoomAttributes {
+  /**
+   * The class of the room (e.g., Standard, Deluxe, Suite)
+   */
+  class?: string
+  /**
+   * The view provided by the room (e.g., Ocean, Garden, City)
+   */
+  view?: string
+  /**
+   * Physical features (e.g., Balcony, Terrace, Non-Smoking)
+   */
+  features?: string[]
+}
+
 export interface StaysRoom {
   /**
    * The room name.
    */
   name: string
+
+  /**
+   * Structured attributes for better mapping and filtering
+   */
+  attributes?: StaysRoomAttributes
+
+  /**
+   * Maximum number of guests allowed in this room
+   */
+  max_occupancy?: number
 
   /**
    * Available beds in the room
@@ -256,6 +291,11 @@ export interface StaysRoom {
    * Supplied photos for the room
    */
   photos?: StaysPhoto[]
+
+  /**
+   * Amenities specific to this room (e.g. Jacuzzi, Mini-bar)
+   */
+  amenities?: StaysAmenity[]
 
   /**
    * The available rates for a specific room, including commission, distribution, payment and included services information.

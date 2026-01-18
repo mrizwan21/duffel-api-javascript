@@ -1,0 +1,142 @@
+openapi: 3.0.0
+info:
+  title: Enterprise Hotel Mapping API
+  version: 1.0.0
+  description: |
+    API for managing hotel room mappings, resolving conflicts between suppliers, 
+    and retrieving unified content.
+    
+    **Authentication**: Requires `X-API-Key` header.
+servers:
+  - url: http://localhost:3000/api/enterprise
+    description: Local Development Server
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  schemas:
+    Conflict:
+      type: object
+      properties:
+        id:
+          type: string
+        entityType:
+          type: string
+          enum: [room, hotel]
+        entityId:
+          type: string
+        fieldName:
+          type: string
+        status:
+          type: string
+          enum: [open, resolved]
+        conflictingSources:
+          type: array
+          items:
+            type: object
+            properties:
+              source:
+                type: string
+              value:
+                type: object
+                nullable: true
+              detectedAt:
+                type: string
+                format: date-time
+    UnifiedRoom:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        photos:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+security:
+  - ApiKeyAuth: []
+paths:
+  /conflicts:
+    get:
+      summary: Retrieve mapping conflicts
+      description: Returns a list of conflicts that require manual resolution.
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [open, resolved]
+            default: open
+          description: Filter conflicts by status
+      responses:
+        '200':
+          description: A list of conflicts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Conflict'
+  /conflicts/{id}/resolve:
+    post:
+      summary: Resolve a conflict
+      description: Applies a resolution strategy to a specific conflict.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [strategy]
+              properties:
+                strategy:
+                  type: string
+                  enum: [keep_internal, apply_source]
+                  description: Strategy to resolve the conflict.
+                source:
+                  type: string
+                  description: The source name to apply (required if strategy is apply_source).
+      responses:
+        '200':
+          description: Conflict resolved successfully
+        '400':
+          description: Invalid strategy or missing source
+        '404':
+          description: Conflict not found
+  /rooms/{id}/unified:
+    get:
+      summary: Get unified room data
+      description: Retrieves the final, merged view of a room including approved enriched content.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Unified room object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/UnifiedRoom'
+        '404':
+          description: Room not found
